@@ -1,0 +1,188 @@
+/**
+ * These arguments were used when this file was generated. They will be automatically applied on subsequent loads
+ * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
+ * @cliArgs --device "F2837xS" --package "F2837xS_100PTP" --part "F2837xS_100PTP" --product "C2000WARE@4.01.00.00"
+ * @versions {"tool":"1.12.0+2406"}
+ */
+
+/**
+ * Import the modules used in this configuration.
+ */
+const can       = scripting.addModule("/driverlib/can.js", {}, false);
+const can1      = can.addInstance();
+const cputimer  = scripting.addModule("/driverlib/cputimer.js", {}, false);
+const cputimer1 = cputimer.addInstance();
+const cputimer2 = cputimer.addInstance();
+const cputimer3 = cputimer.addInstance();
+const gpio      = scripting.addModule("/driverlib/gpio.js", {}, false);
+const gpio1     = gpio.addInstance();
+const gpio2     = gpio.addInstance();
+const gpio3     = gpio.addInstance();
+const gpio4     = gpio.addInstance();
+const gpio5     = gpio.addInstance();
+const gpio6     = gpio.addInstance();
+const gpio7     = gpio.addInstance();
+const gpio8     = gpio.addInstance();
+const gpio9     = gpio.addInstance();
+const gpio10    = gpio.addInstance();
+const i2c       = scripting.addModule("/driverlib/i2c.js", {}, false);
+const i2c1      = i2c.addInstance();
+const sci       = scripting.addModule("/driverlib/sci.js", {}, false);
+const sci1      = sci.addInstance();
+const sci2      = sci.addInstance();
+const spi       = scripting.addModule("/driverlib/spi.js", {}, false);
+const spi1      = spi.addInstance();
+const sysctl    = scripting.addModule("/driverlib/sysctl.js");
+
+/**
+ * Write custom configuration values to the imported modules.
+ */
+can1.sysClock                = 100;
+can1.$name                   = "CAN_A";
+can1.enableInterrupt         = true;
+can1.interruptFlags          = ["CAN_INT_IE0"];
+can1.interruptLine           = ["CAN_GLOBAL_INT_CANINT0"];
+can1.registerInterrupts      = true;
+can1.msgObjsUsed             = [1,2];
+can1.can.$assign             = "CANA";
+can1.can.canrxPin.$assign    = "GPIO70";
+can1.can.cantxPin.$assign    = "GPIO71";
+can1.can0Int.enableInterrupt = true;
+can1.msgObj1.$name           = "msgObj1";
+can1.msgObj1.msgType         = "CAN_MSG_OBJ_TYPE_TX";
+can1.msgObj1.flags           = ["CAN_MSG_OBJ_TX_INT_ENABLE"];
+can1.msgObj1.msgID           = 256;
+can1.msgObj1.msgLen          = 2;
+can1.msgObj2.$name           = "msgObj0";
+can1.msgObj2.msgType         = "CAN_MSG_OBJ_TYPE_TX";
+can1.msgObj2.msgID           = 257;
+can1.msgObj2.flags           = ["CAN_MSG_OBJ_TX_INT_ENABLE"];
+can1.msgObj2.msgLen          = 2;
+scripting.suppress("Sysclk Frequency is not the default value of 200", can1, "sysClock");
+
+cputimer1.$name                    = "TIMER0_1MS";
+cputimer1.startTimer               = true;
+cputimer1.enableInterrupt          = true;
+cputimer1.registerInterrupts       = true;
+cputimer1.timerPeriod              = 105263;
+cputimer1.timerInt.enableInterrupt = true;
+
+cputimer2.cputimerBase             = "CPUTIMER1_BASE";
+cputimer2.$name                    = "TIMER1_1MS";
+cputimer2.timerPeriod              = 100000;
+cputimer2.enableInterrupt          = true;
+cputimer2.registerInterrupts       = true;
+cputimer2.startTimer               = true;
+cputimer2.timerInt.enableInterrupt = true;
+
+cputimer3.$name          = "TIMER_US";
+cputimer3.cputimerBase   = "CPUTIMER2_BASE";
+cputimer3.timerPrescaler = 100;
+cputimer3.timerPeriod    = 4294967295;
+
+gpio1.$name             = "led1";
+gpio1.direction         = "GPIO_DIR_MODE_OUT";
+gpio1.writeInitialValue = true;
+gpio1.gpioPin.$assign   = "GPIO11";
+
+gpio2.$name             = "led2";
+gpio2.direction         = "GPIO_DIR_MODE_OUT";
+gpio2.writeInitialValue = true;
+gpio2.gpioPin.$assign   = "GPIO12";
+
+gpio3.direction         = "GPIO_DIR_MODE_OUT";
+gpio3.writeInitialValue = true;
+gpio3.initialValue      = 1;
+gpio3.$name             = "Gyro_CS";
+gpio3.gpioPin.$assign   = "GPIO58";
+
+gpio4.direction         = "GPIO_DIR_MODE_OUT";
+gpio4.writeInitialValue = true;
+gpio4.initialValue      = 1;
+gpio4.$name             = "Axel_CS";
+gpio4.gpioPin.$assign   = "GPIO59";
+
+gpio5.$name             = "led3";
+gpio5.writeInitialValue = true;
+gpio5.direction         = "GPIO_DIR_MODE_OUT";
+gpio5.gpioPin.$assign   = "GPIO13";
+
+gpio6.$name             = "led4";
+gpio6.writeInitialValue = true;
+gpio6.direction         = "GPIO_DIR_MODE_OUT";
+gpio6.gpioPin.$assign   = "GPIO14";
+
+gpio7.$name             = "MMC_CS";
+gpio7.writeInitialValue = true;
+gpio7.direction         = "GPIO_DIR_MODE_OUT";
+gpio7.gpioPin.$assign   = "GPIO60";
+
+gpio8.$name             = "CS_AG";
+gpio8.direction         = "GPIO_DIR_MODE_OUT";
+gpio8.writeInitialValue = true;
+gpio8.initialValue      = 1;
+gpio8.gpioPin.$assign   = "GPIO41";
+
+gpio9.$name             = "CS_M";
+gpio9.direction         = "GPIO_DIR_MODE_OUT";
+gpio9.writeInitialValue = true;
+gpio9.initialValue      = 1;
+gpio9.gpioPin.$assign   = "GPIO65";
+
+gpio10.$name             = "CAN_BW";
+gpio10.writeInitialValue = true;
+gpio10.direction         = "GPIO_DIR_MODE_OUT";
+gpio10.gpioPin.$assign   = "GPIO69";
+
+i2c1.useInterrupts      = false;
+i2c1.bitCount           = "I2C_BITCOUNT_8";
+i2c1.useInterfacePins   = ["SCL@","SDA@"];
+i2c1.$name              = "I2C0";
+i2c1.emulationMode      = "I2C_EMULATION_FREE_RUN";
+i2c1.duty               = "I2C_DUTYCYCLE_50";
+i2c1.slaveAddress       = 0x60;
+i2c1.useFifo            = false;
+i2c1.i2c.$assign        = "I2CA";
+i2c1.i2c.sdaPin.$assign = "GPIO91";
+i2c1.i2c.sclPin.$assign = "GPIO92";
+
+sci1.$name                    = "UartBT";
+sci1.registerInterrupts       = true;
+sci1.enabledFIFOInterrupts    = ["SCI_INT_RXFF"];
+sci1.enabledInterrupts        = ["SCI_INT_RXRDY_BRKDT"];
+sci1.rxFifo                   = "SCI_FIFO_RX1";
+sci1.sci.$assign              = "SCIA";
+sci1.sci.scirxdPin.$assign    = "GPIO43";
+sci1.sci.scitxdPin.$assign    = "GPIO42";
+sci1.sciRXInt.enableInterrupt = true;
+
+sci2.$name                    = "UartExt";
+sci2.registerInterrupts       = true;
+sci2.enabledInterrupts        = ["SCI_INT_RXRDY_BRKDT"];
+sci2.rxFifo                   = "SCI_FIFO_RX1";
+sci2.enabledFIFOInterrupts    = ["SCI_INT_RXFF"];
+sci2.baudRates                = 125000;
+sci2.sci.$assign              = "SCIC";
+sci2.sci.scirxdPin.$assign    = "GPIO62";
+sci2.sci.scitxdPin.$assign    = "GPIO63";
+sci2.sciRXInt.enableInterrupt = true;
+
+spi1.$name                  = "SPI_A";
+spi1.mode                   = "SPI_MODE_MASTER";
+spi1.emulationMode          = "SPI_EMULATION_FREE_RUN";
+spi1.dataWidth              = "8";
+spi1.useFifo                = false;
+spi1.useInterrupts          = false;
+spi1.useCase                = "CUSTOM";
+spi1.useInterfacePins       = ["SPICLK@","SPISIMO@","SPISOMI@"];
+spi1.bitRate                = 6000000;
+spi1.transferProtocol       = "SPI_PROT_POL0PHA1";
+spi1.spi.$assign            = "SPIA";
+spi1.spi.spisimoPin.$assign = "GPIO16";
+spi1.spi.spisomiPin.$assign = "GPIO17";
+spi1.spi.spiclkPin.$assign  = "GPIO18";
+
+sysctl.enableNMIGlobalInterrupt   = true;
+sysctl.standbyQualificationPeriod = 63;
+sysctl.splitCode                  = true;
+sysctl.enableMCD                  = true;

@@ -1,0 +1,20 @@
+# Build artifacts and compiler output
+CPU1_FLASH/
+CPU1_RAM/
+
+# IDE and temporary files
+*.obj
+*.d
+*.out
+*.map
+*.hex
+*.bin
+*.dbg
+*.i01
+*.log
+*.xml
+*.opt
+
+# Project specific local copies
+MMC5983MA_Guaranteed_Sampling_Rate_Analysis.html
+datasheet_dump.txt
