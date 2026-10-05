@@ -41,16 +41,38 @@ volatile uint16_t dummy = 0;
    GPIO_writePin(MMC_CS, 1);
 }
 //-----------------------------------------------------------------------------
-long gMMC5983_BridgeOffset[3] = {0, 0, 0};
+uint8_t MMC5983_ReadTemperature(void)
+{
+    MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, 0x02); // TM_T
+    DEVICE_DELAY_US(2000);
+    return (uint8_t)MMC5983_readReg(MMC5983_T_OUT_REG);
+}
 
-static void MMC5983_ReadRawXYZ_Internal(long *raw)
+void MMC5983_Init()
+{
+    MMC5983_writeReg(MMC5983_INT_CTRL_1_REG, 0x80); // SW Reset
+    DEVICE_DELAY_US(15000);
+
+    // Degaussing cycle with full 20ms capacitor charge:
+    MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, (1<<4)); // coil RESET
+    DEVICE_DELAY_US(20000); // 20ms full recharge of CAP (10uF)
+
+    MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, (1<<3)); // coil SET (final forward state)
+    DEVICE_DELAY_US(20000); // 20ms full recharge of CAP (10uF)
+
+    MMC5983_writeReg(MMC5983_INT_CTRL_1_REG, 0x03); // BW=800Hz
+    MMC5983_writeReg(MMC5983_INT_CTRL_2_REG, 0xDF); // Continuous Mode 1000Hz, periodic SET every 500 samples
+    MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, (1<<5)); // Auto_SR
+}
+
+void MMC5983_ReadXYZ(long *Mptr)
 {
     volatile uint16_t buffer[7] = {0,};
     volatile long x=0, y=0, z=0;
     volatile uint16_t data = 0;
 
     GPIO_writePin(MMC_CS, 0);
-        SPI_writeDataBlockingNonFIFO(SPIBASE, 0x8000);
+        SPI_writeDataBlockingNonFIFO(SPIBASE, 0x8000); // read from address 0
         data = SPI_readDataBlockingNonFIFO(SPIBASE);
         for(int i = 0; i < 7; i++)
         {
@@ -59,90 +81,19 @@ static void MMC5983_ReadRawXYZ_Internal(long *raw)
         }
     GPIO_writePin(MMC_CS, 1);
 
-    x = buffer[0];
-    x = (x << 8) | buffer[1];
-    x = (x << 2) | (buffer[6] >> 6);
-    y = buffer[2];
-    y = (y << 8) | buffer[3];
-    y = (y << 2) | ((buffer[6] >> 4) & 0x03);
-    z = buffer[4];
-    z = (z << 8) | buffer[5];
-    z = (z << 2) | ((buffer[6] >> 2) & 0x03);
+    x = buffer[0]; // Xout[17:10]
+    x = (x << 8) | buffer[1]; // Xout[9:2]
+    x = (x << 2) | (buffer[6] >> 6); // Xout[1:0]
+    y = buffer[2]; // Yout[17:10]
+    y = (y << 8) | buffer[3]; // Yout[9:2]
+    y = (y << 2) | ((buffer[6] >> 4) & 0x03); // Yout[1:0]
+    z = buffer[4]; // Zout[17:10]
+    z = (z << 8) | buffer[5]; // Zout[9:2]
+    z = (z << 2) | ((buffer[6] >> 2) & 0x03); // Zout[1:0]
 
     x -= (uint32_t)1 << 17;
     y -= (uint32_t)1 << 17;
     z -= (uint32_t)1 << 17;
-
-    raw[0] = x;
-    raw[1] = y;
-    raw[2] = z;
-}
-
-uint8_t MMC5983_ReadTemperature(void)
-{
-    MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, 0x02); // TM_T
-    DEVICE_DELAY_US(2000);
-    return (uint8_t)MMC5983_readReg(MMC5983_T_OUT_REG);
-}
-
-void MMC5983_CalibrateBridge(void)
-{
-    long set_val[3] = {0, 0, 0};
-    long reset_val[3] = {0, 0, 0};
-
-    // 1. ременно отключаем непрерывный режим
-    MMC5983_writeReg(MMC5983_INT_CTRL_2_REG, 0x00);
-    DEVICE_DELAY_US(1000);
-
-    // 2. мпульс SET и измерение при прямой намагниченности
-    MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, (1<<3)); // SET coil
-    DEVICE_DELAY_US(1000);
-    MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, 0x01); // TM_M
-    DEVICE_DELAY_US(1200);
-    MMC5983_ReadRawXYZ_Internal(set_val);
-
-    // 3. мпульс RESET и измерение при обратной намагниченности
-    MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, (1<<4)); // RESET coil
-    DEVICE_DELAY_US(1000);
-    MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, 0x01); // TM_M
-    DEVICE_DELAY_US(1200);
-    MMC5983_ReadRawXYZ_Internal(reset_val);
-
-    // 4. ычисление смещения нуля пермаллоевого моста (Null Field Offset)
-    gMMC5983_BridgeOffset[0] = (set_val[0] + reset_val[0]) / 2;
-    gMMC5983_BridgeOffset[1] = (set_val[1] + reset_val[1]) / 2;
-    gMMC5983_BridgeOffset[2] = (set_val[2] + reset_val[2]) / 2;
-
-    // 5. озврат датчика в рабочее состояние (импульс SET)
-    MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, (1<<3)); // SET coil
-    DEVICE_DELAY_US(1000);
-
-    // 6. озврат в непрерывный режим 1000 ц с периодическим SET
-    MMC5983_writeReg(MMC5983_INT_CTRL_2_REG, 0xDF);
-    MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, (1<<5)); // Auto_SR
-}
-
-void MMC5983_Init()
-{
-    MMC5983_writeReg(MMC5983_INT_CTRL_1_REG, 0x80); // SW Reset
-    DEVICE_DELAY_US(15000);
-
-    MMC5983_writeReg(MMC5983_INT_CTRL_1_REG, 0x03); // BW=800Hz
-    DEVICE_DELAY_US(1000);
-
-    // алибровка моста при включении (нахождение Null Field Offset)
-    MMC5983_CalibrateBridge();
-}
-
-void MMC5983_ReadXYZ(long *Mptr)
-{
-    long raw[3] = {0, 0, 0};
-    MMC5983_ReadRawXYZ_Internal(raw);
-
-    // ычитаем аппаратный оффсет моста пермаллоя
-    long x = raw[0] - gMMC5983_BridgeOffset[0];
-    long y = raw[1] - gMMC5983_BridgeOffset[1];
-    long z = raw[2] - gMMC5983_BridgeOffset[2];
 
     Mptr[0] = -x;
     Mptr[1] = -y;

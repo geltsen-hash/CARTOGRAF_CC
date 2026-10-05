@@ -274,26 +274,10 @@ static uint16_t i_filter = 0;
        angle_aps_m = atan2(M.Y, M.X);
 
        // �� �������
-       static uint64_t NextBridgeCalTime = 0;
-       static int16_t last_cal_temp = -999;
-
        if(!bIsMoving && (GetNow() > NextCorrTime))
        {
            //GPIO_writePin(led3, 0); //dbg
            NextCorrTime = GetNow() + CORRECTION_TIME;
-
-           // Standstill permalloy bridge calibration (every 60s or Delta T >= 2 degC)
-           if(GetNow() > NextBridgeCalTime)
-           {
-               uint8_t raw_t = MMC5983_ReadTemperature();
-               int16_t cur_temp_c = (int16_t)raw_t - 75; // 0 LSB = -75 degC, ~0.8 degC/LSB
-               if(last_cal_temp == -999 || labs((long)(cur_temp_c - last_cal_temp)) >= 2 || (GetNow() > NextBridgeCalTime + 60000ULL))
-               {
-                   MMC5983_CalibrateBridge();
-                   last_cal_temp = cur_temp_c;
-                   NextBridgeCalTime = GetNow() + 60000ULL;
-               }
-           }
            G_M_angle = angle_aps_m - angle_aps;//���������� ������� ����� �������� � �������������� ������������ ������
            if(fabs(W.Z) < 0.1)
                //Wg_offset = W.Z;// ���������� �������� ���� ���������

@@ -220,7 +220,7 @@ struct TOneWorkCycle {
   uint16_t sectorCounter; // ������� ��������
   volatile uint16_t timeUnitCounter; // ������� ����� ������������ ��� ��������� ������� ��������
   uint16_t allTimeUnits; // ����� ����� ����� ������������ ��� ������� ����������� �� TxWorkTime + 1
-  volatile uint32_t �ycleStartTime_ms; // ����� ������ ����� � ��
+  volatile uint32_t cycleStartTime_ms; // ����� ������ ����� � ��
   uint16_t currTx; // ������� ����� �����������
   uint16_t prepareDataTimeMcsCounter; // ������� ����������� �� ��������� ������ ������ ����������
   bool bTxActive;

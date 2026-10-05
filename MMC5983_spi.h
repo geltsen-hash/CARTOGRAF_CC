@@ -35,9 +35,7 @@ void MMC5983_Init();
 void MMC5983_writeReg(uint16_t addr, uint16_t value);
 uint16_t MMC5983_readReg(uint16_t regaddr);
 void MMC5983_ReadXYZ(long *Mptr);
-void MMC5983_CalibrateBridge(void);
 uint8_t MMC5983_ReadTemperature(void);
-extern long gMMC5983_BridgeOffset[3];
 //void MMC5983_Reset();
 //void MMC5983_Set();
 

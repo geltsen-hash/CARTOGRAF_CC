@@ -231,7 +231,7 @@ void WorkCyclogram()
         wc.allTimeUnits = wc.TxWorkTime[wc.currTx]+TX_ADD_TIME;
         wc.timeUnitCounter = 0;
         wc.bFinishFlag = false;
-        wc.сycleStartTime_ms = GetNow(); // здесь начали считать время цикла;
+        wc.cycleStartTime_ms = GetNow(); // здесь начали считать время цикла;
         GPIO_writePin(led1, 0);
         GPIO_writePin(led2, 1); //begin --------------------------
         //GPIO_writePin(led3, 0);
@@ -408,7 +408,7 @@ void WorkCyclogram()
             }
           }//endif wasadcint
     // Если вышло время максимальной длительности цикла, то вываливаемся:
-    if((wc.сycleStartTime_ms + MAX_CYCLE_TIME_MS) <= GetNow())
+    if((wc.cycleStartTime_ms + MAX_CYCLE_TIME_MS) <= GetNow())
     {
         wc.turnCounter = 0;
       // Здесь собственно вываливаемся на обработку:
@@ -784,7 +784,7 @@ void WorkCyclogram()
               wc.currFreq = Metro.F[1];
               bFreq = 1;
               wc.allTimeUnits = wc.TxWorkTime[wc.currTx]+TX_ADD_TIME;
-              wc.сycleStartTime_ms = GetNow(); // здесь начали считать время цикла;
+              wc.cycleStartTime_ms = GetNow(); // здесь начали считать время цикла;
 #ifndef EMUL
               CAN_Send_Broadcast(); //0-й молчащий передатчик
 #endif
