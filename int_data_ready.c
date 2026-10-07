@@ -150,6 +150,7 @@ static uint16_t i_filter = 0;
         L3GD20_ReadXYZ(Wxyz); //������ ��������
         ADXL355_ReadXYZ(Gxyz);
         MMC5983_ReadXYZ(Mxyz);
+        MMC5983_StartAutoSR(); // Запуск следующего цикла Auto_SR на 1.25 мс вперед
 
         //����� � ������ ��� ����� ������
         G_raw.X = Gxyz[1];  //0
@@ -208,8 +209,8 @@ static uint16_t i_filter = 0;
            Wg = -W.Z;//rad/c
            Wg -= Wg_offset;
        }
-       #define SENSOR_SAMPLE_RATE_HZ 950.0f
-       Wg_1000 = Wg / SENSOR_SAMPLE_RATE_HZ; ///rad per 1 sample (T=1.0526ms)
+       #define SENSOR_SAMPLE_RATE_HZ 800.0f
+       Wg_1000 = Wg / SENSOR_SAMPLE_RATE_HZ; ///rad per 1 sample (T=1.25ms)
 
        //��������� ���, ����� ��������� �a� ����������
        G_modul = modul(G); M_modul = modul(M); W_modul = Wg;

@@ -1,11 +1,11 @@
 /*
  * MMC5983_spi.c
  *
- *  Created on: 1 апр. 2024 г.
+ *  Created on: 1 пїЅпїЅпїЅ. 2024 пїЅ.
  *      Author: user
  *
- *      Версия для DriverLib
- *      Реализовано только continuous mode через SPI
+ *      пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ DriverLib
+ *      пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ continuous mode пїЅпїЅпїЅпїЅпїЅ SPI
  */
 
 #include "MMC5983_spi.h"
@@ -48,6 +48,11 @@ uint8_t MMC5983_ReadTemperature(void)
     return (uint8_t)MMC5983_readReg(MMC5983_T_OUT_REG);
 }
 
+void MMC5983_StartAutoSR(void)
+{
+    MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, 0x21); // Auto_SR_en (0x20) | TM_M (0x01)
+}
+
 void MMC5983_Init()
 {
     MMC5983_writeReg(MMC5983_INT_CTRL_1_REG, 0x80); // SW Reset
@@ -60,9 +65,12 @@ void MMC5983_Init()
     MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, (1<<3)); // coil SET (final forward state)
     DEVICE_DELAY_US(20000); // 20ms full recharge of CAP (10uF)
 
-    MMC5983_writeReg(MMC5983_INT_CTRL_1_REG, 0x03); // BW=800Hz
-    MMC5983_writeReg(MMC5983_INT_CTRL_2_REG, 0xDF); // Continuous Mode 1000Hz, periodic SET every 500 samples
-    MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, (1<<5)); // Auto_SR
+    MMC5983_writeReg(MMC5983_INT_CTRL_1_REG, 0x03); // BW=800Hz (0.5ms A/D conversion time)
+    MMC5983_writeReg(MMC5983_INT_CTRL_2_REG, 0x00); // Continuous Mode disabled (One-Shot mode)
+
+    // Prime the very first Auto_SR measurement so registers have valid data on first timer tick:
+    MMC5983_StartAutoSR();
+    DEVICE_DELAY_US(2000); // 2ms initial completion wait
 }
 
 void MMC5983_ReadXYZ(long *Mptr)
