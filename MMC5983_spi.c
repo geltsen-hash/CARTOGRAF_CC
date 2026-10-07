@@ -41,13 +41,6 @@ volatile uint16_t dummy = 0;
    GPIO_writePin(MMC_CS, 1);
 }
 //-----------------------------------------------------------------------------
-uint8_t MMC5983_ReadTemperature(void)
-{
-    MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, 0x02); // TM_T
-    DEVICE_DELAY_US(2000);
-    return (uint8_t)MMC5983_readReg(MMC5983_T_OUT_REG);
-}
-
 void MMC5983_StartAutoSR(void)
 {
     MMC5983_writeReg(MMC5983_INT_CTRL_0_REG, 0x21); // Auto_SR_en (0x20) | TM_M (0x01)

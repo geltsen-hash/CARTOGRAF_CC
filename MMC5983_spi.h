@@ -36,7 +36,6 @@ void MMC5983_writeReg(uint16_t addr, uint16_t value);
 uint16_t MMC5983_readReg(uint16_t regaddr);
 void MMC5983_ReadXYZ(long *Mptr);
 void MMC5983_StartAutoSR(void);
-uint8_t MMC5983_ReadTemperature(void);
 //void MMC5983_Reset();
 //void MMC5983_Set();
 
