@@ -114,6 +114,7 @@ extern bool bAPSPrinted;
 __interrupt void INT_TIMER1_1MS_ISR(void) //1�� ���������� ������� �������
 {
     Now++;
+    wc.wasADCInt = true;
    //Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP1);
 }
 //-----------------------------------------------------------------------------

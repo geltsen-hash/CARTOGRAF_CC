@@ -491,7 +491,6 @@ static uint16_t i_filter = 0;
       i_filter++;
     else i_filter = 0;
 
-    wc.wasADCInt = true;
    /*//===============================================
     DINT;
     HWREGH(PIECTRL_BASE + PIE_O_IER1) = tempPIEIER;
