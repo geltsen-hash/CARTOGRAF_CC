@@ -219,39 +219,68 @@ static uint16_t i_filter = 0;
        //K_predict ��� ��������� ����(������) �� ������������.
        // 10 mkc
 
-       float aver_modul_m = 0, summ_modul_m = 0;
-       float aver_modul_g = 0, summ_modul_g = 0;
-       float aver_modul_w = 0, summ_modul_w = 0;
-       slo_modul_g = 0; slo_modul_m = 0; slo_modul_w = 0;
+       static uint16_t i_mld = 0;
+       static uint16_t prev_mld_size = 0;
+       static float mld_sum_m = 0.0f, mld_sum_g = 0.0f, mld_sum_w = 0.0f;
 
-       //������������ ����� �� �������
-       for (int i = 0; i < MLD_WINDOW_SIZE-1; i++){
-           m_modul_buff[i] = m_modul_buff[i+1];
-           g_modul_buff[i] = g_modul_buff[i+1];
-           w_modul_buff[i] = w_modul_buff[i+1];
+       if (MLD_WINDOW_SIZE > 64) MLD_WINDOW_SIZE = 64;
+       if (MLD_WINDOW_SIZE < 1) MLD_WINDOW_SIZE = 1;
+
+       if ((uint16_t)MLD_WINDOW_SIZE != prev_mld_size) {
+           prev_mld_size = (uint16_t)MLD_WINDOW_SIZE;
+           i_mld = 0;
+           mld_sum_m = 0.0f; mld_sum_g = 0.0f; mld_sum_w = 0.0f;
+           for (int i = 0; i < MLD_WINDOW_SIZE; i++) {
+               m_modul_buff[i] = M_modul;
+               g_modul_buff[i] = G_modul;
+               w_modul_buff[i] = W_modul;
+               mld_sum_m += M_modul;
+               mld_sum_g += G_modul;
+               mld_sum_w += W_modul;
+           }
        }
-       //����� � ����� ������
-       m_modul_buff[MLD_WINDOW_SIZE-1] = M_modul;
-       g_modul_buff[MLD_WINDOW_SIZE-1] = G_modul;
-       w_modul_buff[MLD_WINDOW_SIZE-1] = W_modul;
-       //������� �������
-       for (int i = 0; i < MLD_WINDOW_SIZE; i++){
-           aver_modul_m +=  m_modul_buff[i];
-           aver_modul_g +=  g_modul_buff[i];
-           aver_modul_w +=  w_modul_buff[i];
+
+       // Subtract oldest sample from running sum
+       mld_sum_m -= m_modul_buff[i_mld];
+       mld_sum_g -= g_modul_buff[i_mld];
+       mld_sum_w -= w_modul_buff[i_mld];
+
+       // Store new sample in ring buffer O(1)
+       m_modul_buff[i_mld] = M_modul;
+       g_modul_buff[i_mld] = G_modul;
+       w_modul_buff[i_mld] = W_modul;
+
+       // Add new sample to running sum
+       mld_sum_m += M_modul;
+       mld_sum_g += G_modul;
+       mld_sum_w += W_modul;
+
+       if (++i_mld >= (uint16_t)MLD_WINDOW_SIZE) {
+           i_mld = 0;
+           // Periodic re-sync to eliminate float epsilon accumulation
+           mld_sum_m = 0.0f; mld_sum_g = 0.0f; mld_sum_w = 0.0f;
+           for (int i = 0; i < MLD_WINDOW_SIZE; i++) {
+               mld_sum_m += m_modul_buff[i];
+               mld_sum_g += g_modul_buff[i];
+               mld_sum_w += w_modul_buff[i];
+           }
        }
-       aver_modul_m /= MLD_WINDOW_SIZE;
-       aver_modul_g /= MLD_WINDOW_SIZE;
-       aver_modul_w /= MLD_WINDOW_SIZE;
-       //������� �������������� ����������
-       for (int i = 0; i < MLD_WINDOW_SIZE; i++){
-           summ_modul_m += fabs(m_modul_buff[i] - aver_modul_m);
-           summ_modul_g += fabs(g_modul_buff[i] - aver_modul_g);
-           summ_modul_w += fabs(w_modul_buff[i] - aver_modul_w);
+
+       float inv_mld = 1.0f / (float)MLD_WINDOW_SIZE;
+       float aver_modul_m = mld_sum_m * inv_mld;
+       float aver_modul_g = mld_sum_g * inv_mld;
+       float aver_modul_w = mld_sum_w * inv_mld;
+
+       // Mean absolute deviation
+       float summ_modul_m = 0.0f, summ_modul_g = 0.0f, summ_modul_w = 0.0f;
+       for (int i = 0; i < MLD_WINDOW_SIZE; i++) {
+           summ_modul_m += fabsf(m_modul_buff[i] - aver_modul_m);
+           summ_modul_g += fabsf(g_modul_buff[i] - aver_modul_g);
+           summ_modul_w += fabsf(w_modul_buff[i] - aver_modul_w);
        }
-       slo_modul_m = summ_modul_m / MLD_WINDOW_SIZE;
-       slo_modul_g = summ_modul_g / MLD_WINDOW_SIZE;
-       slo_modul_w = summ_modul_w / MLD_WINDOW_SIZE;
+       slo_modul_m = summ_modul_m * inv_mld;
+       slo_modul_g = summ_modul_g * inv_mld;
+       slo_modul_w = summ_modul_w * inv_mld;
 
        // ��������� ��� ��� �������� ��������
        if(slo_modul_g < MOVEMENT_CMP_VALUE){
@@ -271,8 +300,8 @@ static uint16_t i_filter = 0;
            bIsMoving = true;
 
        //��������� ����
-       angle_aps = atan2(G.Y, G.X);
-       angle_aps_m = atan2(M.Y, M.X);
+       angle_aps = atan2f(G.Y, G.X);
+       angle_aps_m = atan2f(M.Y, M.X);
 
        // �� �������
        if(!bIsMoving && (GetNow() > NextCorrTime))
@@ -280,7 +309,7 @@ static uint16_t i_filter = 0;
            //GPIO_writePin(led3, 0); //dbg
            NextCorrTime = GetNow() + CORRECTION_TIME;
            G_M_angle = angle_aps_m - angle_aps;//���������� ������� ����� �������� � �������������� ������������ ������
-           if(fabs(W.Z) < 0.1)
+           if(fabsf(W.Z) < 0.1f)
                //Wg_offset = W.Z;// ���������� �������� ���� ���������
                Wg_offset = aver_modul_w;
        }
@@ -301,10 +330,10 @@ static uint16_t i_filter = 0;
        while(MTF <= -PI)  MTF += 2*PI;
 
        //�������� ����
-       angle_zen = atan2(sqrt(G.X*G.X + G.Y * G.Y), G.Z);
+       angle_zen = atan2f(sqrtf(G.X*G.X + G.Y * G.Y), G.Z);
        //���� ���������� �� ��������� ��������� 6 ��������
-       if (fabs(angle_zen) >= 0.1)//rad
-           angle_azm = PI - atan2((M.Y*G.X - M.X*G.Y)*G_modul, (M.X*G.X*G.Z + M.Y*G.Y*G.Z - M.Z*G.X*G.X - M.Z*G.Y*G.Y)); //pi-
+       if (fabsf(angle_zen) >= 0.1f)//rad
+           angle_azm = (float)PI - atan2f((M.Y*G.X - M.X*G.Y)*G_modul, (M.X*G.X*G.Z + M.Y*G.Y*G.Z - M.Z*G.X*G.X - M.Z*G.Y*G.Y)); //pi-
        //���� �����������, �� ������ ������� � ����������� ���������
        else angle_azm = angle_aps_m;
 
@@ -348,7 +377,7 @@ static uint16_t i_filter = 0;
     //������� �
     omega = (MTF_buff[N-5] - MTF_buff[N-1]) / 4;
     //K = (int)fabs(history_angle / omega);
-    K = (int)fabs(history_angle / Wg_1000);//rad per 1mc
+    K = (int)fabsf(history_angle / Wg_1000);//rad per 1mc
     MA_delay = Wg_1000*MA_WINDOW_SIZE/4.0; //rad ������� �������� �� ���������� ������� ������� �� ��������
     if (K < 1)K = 1;
     if (K > N)K = N-1;
@@ -357,10 +386,10 @@ static uint16_t i_filter = 0;
  /////����� ��������� ��������� //////////////////////////////////////////////////////////////////////////////////////////////
 
     if(Settings->auto_delta == 1)
-        APS_DELTA = Settings->APS_DELTA + fabs(Wg_1000 * Settings->K_delta);
+        APS_DELTA = Settings->APS_DELTA + fabsf(Wg_1000 * Settings->K_delta);
     //��������� ���������� � ����������������� ���� � ��������� � ����� K_predict
     //� �������� ������� ���������� �� �������
-    if(fabs(MTF-prediction) > APS_DELTA)
+    if(fabsf(MTF-prediction) > APS_DELTA)
         K_predict = 1;
     else
         K_predict = 0.5;
@@ -423,10 +452,10 @@ static uint16_t i_filter = 0;
 
            aps_point = aps_point_arr[aps_idx];//aps_point - ����������� � uart ����� ������ �o��� �������
            //----------------------------------��������� � �����----------------------------------
-           Zmtf = CMPLXF(cos(MTF_m_p), sin(MTF_m_p));
-           Ztarget = CMPLXF(cos(aps_point_arr[aps_idx]), sin(aps_point_arr[aps_idx]));
+           Zmtf = CMPLXF(cosf(MTF_m_p), sinf(MTF_m_p));
+           Ztarget = CMPLXF(cosf(aps_point_arr[aps_idx]), sinf(aps_point_arr[aps_idx]));
            Zdelta = Ztarget - Zmtf;
-           if(cabs(Zdelta) < sin(APS_DELTA) || interrupt_by_angle_path) //����� ������ ���� ~ ����
+           if(cabsf(Zdelta) < sinf(APS_DELTA) || interrupt_by_angle_path) //����� ������ ���� ~ ����
            {
                GPIO_writePin(led1, 1);
                gSectorIdx = (uint16_t)(MTF_deg/22.5); //� ����� ������� ��������� //
